@@ -1,0 +1,290 @@
+<!DOCTYPE html>
+<html lang="zh-HK">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>你的煩囂類型：港式心理測驗</title>
+    <!-- 引入 React 與 Tailwind -->
+    <script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+    <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;700;900&display=swap" rel="stylesheet">
+    <style>
+        body { font-family: 'Noto Sans TC', sans-serif; background-color: #FDFCF0; }
+        .no-scrollbar::-webkit-scrollbar { display: none; }
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        .animate-fadeIn { animation: fadeIn 0.4s ease-out forwards; }
+    </style>
+</head>
+<body>
+    <div id="root"></div>
+
+    <script type="text/babel">
+        const { useState, useEffect, useRef } = React;
+
+        // --- 資料設定 ---
+        // 4 種結果類型：intro (電台), chur (扶手梯), emo (維園), obs (深水埗)
+        const questions = [
+            { q: "收工時間喺金鐘站轉線，人潮湧埋嚟嗰陣，你通常會：", options: [
+                { t: "戴上降噪耳機，進入無人境界", type: "intro" },
+                { t: "行快兩步，穿插人陣上車", type: "chur" },
+                { t: "覺得雨後濕漉漉，好似而家心境", type: "emo" },
+                { t: "隨波逐流，觀察身邊人嘅表情", type: "obs" }
+            ]},
+            { q: "喺一間搭檯嘅茶記，對面個阿叔大聲啜緊凍檸茶，你會：", options: [
+                { t: "攞部電話出嚟狂撳，扮聽唔到", type: "intro" },
+                { t: "內心翻白眼，加快食完起步走", type: "chur" },
+                { t: "勾起某段唔開心嘅回憶", type: "emo" },
+                { t: "覺得有種莫名嘅生活煙火感", type: "obs" }
+            ]},
+            { q: "凌晨兩點，窗外傳嚟地盤工程聲，你第一反應係：", options: [
+                { t: "熄燈，強迫自己斷開同外界聯絡", type: "intro" },
+                { t: "瞓唔著，思考聽朝要交嘅內容", type: "chur" },
+                { t: "望住窗外發呆，覺得好壓抑", type: "emo" },
+                { t: "覺得雜音反而係一種深夜陪伴", type: "obs" }
+            ]},
+            { q: "去中環見到一大群遊客塞住條路，你內心嘅 OS 係：", options: [
+                { t: "直接無視，進入自我靜音模式", type: "intro" },
+                { t: "「借過啦唔該」內心撞開佢哋", type: "chur" },
+                { t: "「唉，香港真係變到好陌生...」", type: "emo" },
+                { t: "睇下佢哋買緊乜，研究社會現狀", type: "obs" }
+            ]},
+            { q: "難得放假可以 Chill 下，你通常會揀：", options: [
+                { t: "留喺屋企「摺埋」，斷絕所有聯絡", type: "intro" },
+                { t: "去行山體力透支換取成就感", type: "chur" },
+                { t: "去海邊聽浪聲，靜靜地流淚", type: "emo" },
+                { t: "搵間 Coffee Shop 坐下觀察文青", type: "obs" }
+            ]},
+            { q: "當你同朋友食飯，大家突然一齊撳電話冇嘢講：", options: [
+                { t: "覺得好舒服，終於唔使搵話題", type: "intro" },
+                { t: "心入面諗緊點樣快啲完場返去工作", type: "chur" },
+                { t: "覺得段友情疏遠咗，暗自神傷", type: "emo" },
+                { t: "觀察餐廳裝修，諗緊呢間舖嘅租金", type: "obs" }
+            ]},
+            { q: "如果可以揀一種聲陪伴你入睡，你會揀：", options: [
+                { t: "純粹嘅死寂，一點聲都冇", type: "intro" },
+                { t: "鬧鐘嘅滴答聲，提醒聽朝要準時", type: "chur" },
+                { t: "緩慢嘅雨聲打喺冷氣機殼", type: "emo" },
+                { t: "遠處微弱嘅電視新聞聲", type: "obs" }
+            ]},
+            { q: "喺紅 Van 想叫「有落」，但全車好安靜：", options: [
+                { t: "揮一揮手，心諗司機一定見到", type: "intro" },
+                { t: "大聲果斷嗌，唔想浪費大家時間", type: "chur" },
+                { t: "掙扎好耐都係唔敢嗌，想喊", type: "emo" },
+                { t: "觀察其他人會唔會有人一齊落", type: "obs" }
+            ]},
+            { q: "見到 Threads 上面啲好感性嘅「雞湯」文：", options: [
+                { t: "直接 Scrolled away 唔想理", type: "intro" },
+                { t: "內心酸一酸：「又喺度扮嘢」", type: "chur" },
+                { t: "默默 Like 咗，寫中咗心酸位", type: "emo" },
+                { t: "研究點解呢類文會咁多人 Like", type: "obs" }
+            ]},
+            { q: "形容下你而家嘅內心狀態：", options: [
+                { t: "好似斷咗訊號，只想靜下", type: "intro" },
+                { t: "好似趕緊車，身不由己", type: "chur" },
+                { t: "好似深夜維港，暗湧不斷", type: "emo" },
+                { t: "好似舊區街道，混亂但生存緊", type: "obs" }
+            ]}
+        ];
+
+        const results = {
+            intro: { title: "隧道斷訊電台", labels: ["潛水員", "斷捨離"], desc: "你好叻喺壓力大嘅時候自動「斷訊」。當生活太過 Chur，你會進入一個「只有沙沙聲」嘅自我空間。", ratios: ["50% 社交離線", "30% 自由渴求", "20% 斷訊時間"], mate: "深夜 7-11", worst: "金鐘站廣播", quote: "「有時收唔到訊號，係我唔想被搵到。」", icon: "📻" },
+            chur: { title: "壞咗嘅扶手梯", labels: ["效率怪獸", "被迫強大"], desc: "即使動力停咗，你依然會強迫自己繼續行。你對自己要求好高，唔容許停滯不前。", ratios: ["60% 責任感", "25% 體力透支", "15% 渴望被愛"], mate: "深水埗黃昏", worst: "斷訊電台", quote: "「就算個世界停咗，我依然會行。」", icon: "🪜" },
+            emo: { title: "紅雨後的維園", labels: ["洗滌心靈", "需要空間"], desc: "經歷過大風大雨，而家處於洗滌後嘅平靜。你鍾意喺安靜嘅環境反思，注重內在清空。", ratios: ["50% 過去回憶", "30% 平靜渴望", "20% 哀愁"], mate: "深水埗黃昏", worst: "7-11 微波爐", quote: "「雨停咗，先睇得清世界。」", icon: "🌧️" },
+            obs: { title: "深水埗的黃昏", labels: ["觀察者", "適應力強"], desc: "喺最混亂嘅環境入面，你反而可以搵到定位。你睇透咗世界嘅不完美。", ratios: ["40% 生活瑣事", "40% 好奇心", "20% 隱藏溫柔"], mate: "斷訊電台", worst: "壞咗扶手梯", quote: "「混亂係一種美，證明我哋生存緊。」", icon: "🌆" }
+        };
+
+        function App() {
+            const [view, setView] = useState('start');
+            const [currentStep, setCurrentStep] = useState(0);
+            const [scores, setScores] = useState({});
+            const [history, setHistory] = useState([]);
+            const [showToast, setShowToast] = useState(false);
+            const [isMusicPlaying, setIsMusicPlaying] = useState(false);
+            const audioRef = useRef(null);
+
+            const toggleMusic = () => {
+                if (audioRef.current) {
+                    if (isMusicPlaying) audioRef.current.pause();
+                    else audioRef.current.play().catch(() => {});
+                    setIsMusicPlaying(!isMusicPlaying);
+                }
+            };
+
+            const handleStart = () => {
+                setView('quiz');
+                if (audioRef.current && !isMusicPlaying) {
+                    audioRef.current.play().catch(() => {});
+                    setIsMusicPlaying(true);
+                }
+            };
+
+            const handleOptionSelect = (type) => {
+                const newHistory = [...history, type];
+                const newScores = { ...scores, [type]: (scores[type] || 0) + 1 };
+                setHistory(newHistory);
+                setScores(newScores);
+
+                if (currentStep + 1 < questions.length) {
+                    setCurrentStep(currentStep + 1);
+                } else {
+                    setView('result');
+                }
+                window.scrollTo({ top: 0, behavior: 'smooth' });
+            };
+
+            const goBack = () => {
+                if (currentStep > 0) {
+                    const lastType = history[history.length - 1];
+                    const newHistory = history.slice(0, -1);
+                    const newScores = { ...scores };
+                    if (lastType) newScores[lastType]--;
+                    setHistory(newHistory);
+                    setScores(newScores);
+                    setCurrentStep(currentStep - 1);
+                }
+            };
+
+            const copyLink = () => {
+                const url = window.location.href;
+                navigator.clipboard.writeText(url).then(() => {
+                    setShowToast(true);
+                    setTimeout(() => setShowToast(false), 2000);
+                });
+            };
+
+            const getResult = () => {
+                const maxType = Object.keys(scores).reduce((a, b) => 
+                    (scores[a] || 0) > (scores[b] || 0) ? a : b, 'intro');
+                return results[maxType] || results['intro'];
+            };
+
+            const resultData = view === 'result' ? getResult() : null;
+
+            return (
+                <div className="min-h-screen w-full bg-[#FDFCF0] text-[#5D4037] relative overflow-x-hidden flex flex-col items-center">
+                    <div className="fixed inset-0 pointer-events-none opacity-[0.12] z-0" style={{ backgroundImage: `url('data:image/svg+xml,%3Csvg viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg"%3E%3Cfilter id="n"%3E%3CfeTurbulence type="fractalNoise" baseFrequency="0.65"/%3E%3C/filter%3E%3Crect width="100%25" height="100%25" filter="url(%23n)"/%3E%3C/svg%3E')` }} />
+                    <audio ref={audioRef} loop src="https://assets.mixkit.co/music/preview/mixkit-city-nights-154.mp3" />
+
+                    <button onClick={toggleMusic} className="fixed top-5 right-5 z-50 w-10 h-10 rounded-full bg-white/50 backdrop-blur-md border border-[#8D6E63]/20 flex items-center justify-center">
+                        <span className={`text-[#8D6E63] ${isMusicPlaying ? 'animate-spin' : ''}`}>🎵</span>
+                    </button>
+
+                    <main className="relative z-10 w-full max-w-[450px] px-5 py-8 flex flex-col items-center min-h-screen">
+                        {view === 'start' && (
+                            <div className="flex flex-col justify-center flex-grow text-center animate-fadeIn">
+                                <h1 className="font-bold flex flex-col gap-2">
+                                    <span className="text-lg text-[#8D6E63] font-normal">喺呢個城市</span>
+                                    <span className="text-5xl text-[#4E342E] leading-tight">你係邊種噪音？</span>
+                                </h1>
+                                <div className="h-px bg-stone-200 w-12 mx-auto my-8" />
+                                <p className="text-base text-stone-600 leading-relaxed mb-12">
+                                    香港，除咗車聲、人聲，仲有你內心嗰種「停唔到落嚟」嘅煩囂。
+                                </p>
+                                <button onClick={handleStart} className="w-full py-5 bg-[#8D6E63] text-white rounded-full text-xl font-bold shadow-xl active:scale-95 transition-transform">
+                                    開始探索
+                                </button>
+                            </div>
+                        )}
+
+                        {view === 'quiz' && (
+                            <div className="w-full space-y-8 animate-fadeIn flex-grow pt-10">
+                                <div className="w-full bg-stone-200 h-1.5 rounded-full overflow-hidden">
+                                    <div className="bg-[#A1887F] h-full transition-all duration-300" style={{ width: `${(currentStep / questions.length) * 100}%` }} />
+                                </div>
+                                <div className="space-y-8">
+                                    <h2 className="text-2xl font-bold text-stone-800 leading-tight min-h-[4rem]">
+                                        {questions[currentStep].q}
+                                    </h2>
+                                    <div className="flex flex-col gap-4">
+                                        {questions[currentStep].options.map((opt, idx) => (
+                                            <button key={idx} onClick={() => handleOptionSelect(opt.type)} className="w-full text-left p-5 bg-white border border-[#E7E5D1] rounded-2xl shadow-sm hover:bg-stone-50 transition-all text-stone-700 text-base font-medium active:scale-[0.98]">
+                                                {opt.t}
+                                            </button>
+                                        ))}
+                                    </div>
+                                    <button onClick={goBack} className={`flex items-center gap-2 text-stone-400 text-sm py-4 ${currentStep === 0 ? 'invisible' : ''}`}>
+                                        ← 返回上一題
+                                    </button>
+                                </div>
+                            </div>
+                        )}
+
+                        {view === 'result' && resultData && (
+                            <div className="w-full space-y-6 animate-fadeIn pb-12">
+                                <div className="bg-white border border-[#E7E5D1] shadow-2xl p-6 rounded-[2.5rem]">
+                                    <div className="flex justify-between items-start mb-6 border-b border-stone-100 pb-4">
+                                        <div>
+                                            <p className="text-[10px] uppercase tracking-widest text-[#8D6E63] font-bold">Noise Profile Report</p>
+                                            <h2 className="text-3xl font-black text-stone-800">{resultData.title}</h2>
+                                        </div>
+                                        <div className="text-5xl">{resultData.icon}</div>
+                                    </div>
+                                    <div className="flex flex-wrap gap-2 mb-6">
+                                        {resultData.labels.map((l, i) => (
+                                            <span key={i} className="px-3 py-1 bg-stone-100 text-stone-500 text-xs rounded-full font-bold">#{l}</span>
+                                        ))}
+                                    </div>
+                                    <div className="bg-stone-50 p-5 rounded-3xl mb-6 border border-stone-100">
+                                        <p className="text-[10px] font-bold text-stone-400 uppercase tracking-widest mb-4">數據分析</p>
+                                        <div className="space-y-4">
+                                            {resultData.ratios.map((r, i) => (
+                                                <div key={i} className="space-y-1.5">
+                                                    <div className="flex justify-between text-[11px] font-bold text-stone-600">
+                                                        <span>{r.split(' ')[1]}</span>
+                                                        <span>{r.split(' ')[0]}</span>
+                                                    </div>
+                                                    <div className="bg-stone-200 h-1.5 rounded-full overflow-hidden">
+                                                        <div className="bg-[#8D6E63] h-full" style={{ width: r.split(' ')[0] }} />
+                                                    </div>
+                                                </div>
+                                            ))}
+                                        </div>
+                                    </div>
+                                    <p className="text-sm leading-relaxed text-stone-500 mb-8 italic px-1">{resultData.desc}</p>
+                                    <div className="grid grid-cols-2 border-t border-stone-100 pt-6 mb-6">
+                                        <div className="border-r border-stone-100 pr-2">
+                                            <span className="text-stone-400 text-[10px] uppercase font-bold block mb-1">最佳拍檔</span>
+                                            <span className="font-bold text-stone-700 text-sm">{resultData.mate}</span>
+                                        </div>
+                                        <div className="pl-4">
+                                            <span className="text-stone-400 text-[10px] uppercase font-bold block mb-1">訊號不良</span>
+                                            <span className="font-bold text-stone-700 text-sm">{resultData.worst}</span>
+                                        </div>
+                                    </div>
+                                    <div className="pt-4 border-t border-stone-50 text-center">
+                                        <p className="font-black text-stone-800 text-lg">「{resultData.quote.replace(/[「」]/g, '')}」</p>
+                                    </div>
+                                </div>
+
+                                <div className="bg-[#8D6E63] rounded-3xl p-6 text-white text-center shadow-lg">
+                                    <p className="text-[10px] font-bold opacity-80 uppercase tracking-widest mb-1">Surprise Reveal</p>
+                                    <h3 className="text-xl font-black mb-4">驚喜優惠即將揭秘</h3>
+                                    <a href="https://mocha-verify-92727434.figma.site/" target="_blank" className="block w-full py-4 bg-yellow-400 text-[#4E342E] font-black rounded-2xl hover:bg-yellow-300 transition-colors shadow-md text-base">立即領取優惠</a>
+                                </div>
+
+                                <button onClick={copyLink} className="w-full py-5 bg-white border border-[#E7E5D1] text-stone-700 font-bold rounded-2xl flex items-center justify-center gap-2 shadow-sm active:scale-95 transition-all">
+                                    分享測驗結果
+                                </button>
+                                
+                                <button onClick={() => window.location.reload()} className="w-full py-2 text-stone-400 text-xs font-bold uppercase tracking-widest">Restart Quiz</button>
+                            </div>
+                        )}
+                    </main>
+
+                    <div className={`fixed bottom-10 left-1/2 -translate-x-1/2 bg-stone-800/90 text-white px-8 py-3 rounded-full text-sm font-bold transition-all duration-300 z-[100] ${showToast ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-8 pointer-events-none'}`}>
+                        已複製連結到剪貼簿
+                    </div>
+                </div>
+            );
+        }
+
+        const root = ReactDOM.createRoot(document.getElementById('root'));
+        root.render(<App />);
+    </script>
+</body>
+</html>
